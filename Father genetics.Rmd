@@ -28,3 +28,54 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+## 1. Data cleaning
+
+### Pull data 
+including PRS and merge
+
+### Check variables, recode including NAs
+
+
+## 2. Included sample
+
+### Check missing
+
+### Constrain sample
+
+
+## 3. Create new variables
+
+### Parental warmth
+
+### Parental control
+
+### Household chaos
+Factor analysis
+
+### Internalising
+
+#### - 4y
+
+#### - 16y
+
+
+## 4. Descriptives
+
+### Means and distributions
+
+### Correlations
+
+
+## 5. Included v excluded
+
+
+## 6. SEM testing
+
+### Model 1
+
+
+### Model 2
+
+
+### Model 3
