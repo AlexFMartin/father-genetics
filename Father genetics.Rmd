@@ -30,9 +30,45 @@ plot(pressure)
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ## 1. Data cleaning
+### Load packages
+```{r}
+# Install libraries
+renv::restore(prompt = F)
+library(haven)
+library(tidyverse)
+# instal packages using install.packages("") in the console then
+# renv::snapshot()
+```
 
-### Pull data 
-including PRS and merge
+
+### Merge and save data 
+```{r, eval = F}
+df.paper3 <- read_spss("data/shuffled data.sav")
+df.pgrChild <- read_csv("data/shuffled data pgrChild.csv")
+
+# merge PRS data
+df.paper3 <- left_join(
+  df.paper3 %>% as_tibble(),
+  df.pgrChild %>% as_tibble(),
+  by = c("cidB2677", "qlet")
+)
+
+# save variables for analysis
+df.paper3 <- df.paper3 %>%
+  select(
+    id = cidB2677,
+    sex = kz021,
+    birthOrder = qlet,
+    childPRS = PRS_int
+  )
+write_csv(df.paper3, "data/filtered data.csv")
+```
+
+```{r}
+# Load data
+df.paper3 <- read_csv("data/filtered data.csv") %>%
+  as_tibble(df.paper3)
+```
 
 ### Check variables, recode including NAs
 
@@ -42,7 +78,10 @@ including PRS and merge
 ### Check missing
 
 ### Constrain sample
+remove twins/triplets
 
+### Sample size calc
+https://www.danielsoper.com/statcalc/calculator.aspx?id=89
 
 ## 3. Create new variables
 
@@ -51,7 +90,7 @@ including PRS and merge
 ### Parental control
 
 ### Household chaos
-Factor analysis
+Confirmatory factor analysis
 
 ### Internalising
 
