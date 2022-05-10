@@ -15,19 +15,6 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ## 1. Data cleaning
 ### Load packages
@@ -36,6 +23,9 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 renv::restore(prompt = F)
 library(haven)
 library(tidyverse)
+library(questionr)
+library(PROscorerTools)
+library(psy)
 # instal packages using install.packages("") in the console then
 # renv::snapshot()
 ```
@@ -45,6 +35,8 @@ library(tidyverse)
 ```{r, eval = F}
 df.paper3 <- read_spss("data/shuffled data.sav")
 df.pgrChild <- read_csv("data/shuffled data pgrChild.csv")
+df.pgrFather <- read_csv("data/shuffled data pgrFather.csv")
+df.pgrMother <- read_csv("data/shuffled data pgrMother.csv")
 
 # merge PRS data
 df.paper3 <- left_join(
@@ -52,33 +44,159 @@ df.paper3 <- left_join(
   df.pgrChild %>% as_tibble(),
   by = c("cidB2677", "qlet")
 )
+df.paper3 <- left_join(
+  df.paper3 %>% as_tibble(),
+  df.pgrFather %>% as_tibble(),
+  by = c("cidB2677", "qlet")
+)
+df.paper3 <- left_join(
+  df.paper3 %>% as_tibble(),
+  df.pgrMother %>% as_tibble(),
+  by = c("cidB2677", "qlet")
+)
 
+rm(df.pgrChild)
+rm(df.pgrFather)
+rm(df.pgrMother)
+```
+
+```{r}
 # save variables for analysis
 df.paper3 <- df.paper3 %>%
   select(
     id = cidB2677,
+    # covariates
     sex = kz021,
     birthOrder = qlet,
-    childPRS = PRS_int
+    fatherAge = pd996,
+    childPRS = PRS_int,
+    fatherPRS = PRS_int.x,
+    motherPRS = PRS_int.y,
+    # parenting 
+    fWarm1 = pe156,
+    fWarm2 = pe150,
+    fWarm3 = pd729,
+    fWarm4 = pe158,
+    fWarm5 = pg4165,
+    mWarm1 = g196,
+    mWarm2 = g190,
+    mWarm3 = f869,
+    mWarm4 = g198,
+    mWarm5 = j565,
+    fControl1 = pe151,
+    fControl2 = pd726,
+    fControl3 = pd727,
+    fControl4 = pg4164,
+    mControl1 = g191,
+    mControl2 = f866,
+    mControl3 = f867,
+    mControl4 = j564,
+    chaos1 = pf8003,
+    chaos2 = pf8004,
+    chaos3 = h374,
+    chaos4 = pf8020,
+    chaos5 = pf8021,
+    # child SDQ
+    sdq4y_1 = pg4132,
+    sdq4y_2 = pg4137,
+    sdq4y_3 = pg4142,
+    sdq4y_4 = pg4145,
+    sdq4y_5 = pg4153,
+    sdq13y_1 = ta7002,
+    sdq13y_2 = ta7007,
+    sdq13y_3 = ta7012,
+    sdq13y_4 = ta7015,
+    sdq13y_5 = ta7023,
+    sdq16y_1 = tc4002,
+    sdq16y_2 = tc4007,
+    sdq16y_3 = tc4012,
+    sdq16y_4 = tc4015,
+    sdq16y_5 = tc4023
   )
 write_csv(df.paper3, "data/filtered data.csv")
 ```
 
+
 ```{r}
 # Load data
 df.paper3 <- read_csv("data/filtered data.csv") %>%
-  as_tibble(df.paper3)
+  as_tibble()
 ```
 
-### Check variables, recode including NAs
+### Recode variables
+```{r}
+# code 9 as na where needed and recode so that SDQ items ranges from 0-2
+# 4y
+df.paper3 <- df.paper3 %>%
+  mutate(
+    sdq4y_1 = sdq4y_1-1,
+    sdq4y_2 = sdq4y_2-1,
+    sdq4y_3 = sdq4y_3-1,
+    sdq4y_4 = sdq4y_4-1,
+    sdq4y_5 = sdq4y_5-1
+  )
+
+# 13y
+df.paper3$sdq13y_1 = recode.na(df.paper3$sdq13y_1, "9", as.numeric = TRUE)
+df.paper3$sdq13y_2 = recode.na(df.paper3$sdq13y_2, "9", as.numeric = TRUE)
+df.paper3$sdq13y_3 = recode.na(df.paper3$sdq13y_3, "9", as.numeric = TRUE)
+df.paper3$sdq13y_4 = recode.na(df.paper3$sdq13y_4, "9", as.numeric = TRUE)
+df.paper3$sdq13y_5 = recode.na(df.paper3$sdq13y_5, "9", as.numeric = TRUE)
+
+df.paper3 <- df.paper3 %>% 
+  mutate(
+    sdq13y_1 = sdq13y_1-1,
+    sdq13y_2 = sdq13y_2-1,
+    sdq13y_3 = sdq13y_3-1,
+    sdq13y_4 = sdq13y_4-1,
+    sdq13y_5 = sdq13y_5-1  
+  )
+
+# 16y
+df.paper3$sdq16y_1 = recode.na(df.paper3$sdq16y_1, "9", as.numeric = TRUE)
+df.paper3$sdq16y_2 = recode.na(df.paper3$sdq16y_2, "9", as.numeric = TRUE)
+df.paper3$sdq16y_3 = recode.na(df.paper3$sdq16y_3, "9", as.numeric = TRUE)
+df.paper3$sdq16y_4 = recode.na(df.paper3$sdq16y_4, "9", as.numeric = TRUE)
+df.paper3$sdq16y_5 = recode.na(df.paper3$sdq16y_5, "9", as.numeric = TRUE)
+
+df.paper3 <- df.paper3 %>%
+  mutate(
+    sdq16y_1 = sdq16y_1-1,
+    sdq16y_2 = sdq16y_2-1,
+    sdq16y_3 = sdq16y_3-1,
+    sdq16y_4 = sdq16y_4-1,
+    sdq16y_5 = sdq16y_5-1
+  )
+```
+
 
 
 ## 2. Included sample
 
-### Check missing
-
 ### Constrain sample
 remove twins/triplets
+```{r}
+# Set seed for randomisation
+set.seed(20220510)
+# remove duplicate
+df.paper3 <- df.paper3 %>%
+  nest(d = -id) %>%
+  mutate(d = map(d, ~ {
+    if (nrow(.) > 1)
+      sample(.)[1, ]
+    else
+      .
+  }
+  )) %>%
+    unnest(cols = d)
+```
+
+
+remove any non-biological fathers (??matchDOB_B2677; matchDOB2_B2677)
+•	The first variables are binary (e.g. matchDOB, matchday etc.); they state whether there is a match or not across the questionnaires.
+•	The second variables are 3-category (e.g. matchDOB2, matchday2 etc.); they split the ‘match’ category of the binary variable into those who only reported once, and those who reported more than once and who matched in every questionnaire they completed.
+
+### Check missing
 
 ### Sample size calc
 https://www.danielsoper.com/statcalc/calculator.aspx?id=89
@@ -86,17 +204,61 @@ https://www.danielsoper.com/statcalc/calculator.aspx?id=89
 ## 3. Create new variables
 
 ### Parental warmth
+```{r}
+# correlation matrix 
+df.cor <- df.paper3 %>%
+  select(id, fWarm1, fWarm2, fWarm3, fWarm4, fWarm5)
+# print matrix
+round(cor(df.cor[ , 2:6], use = "complete.obs"), 2)
+cronbach(df.cor)
+# Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
+```
+
+
 
 ### Parental control
+Factor score
 
 ### Household chaos
 Confirmatory factor analysis
+factor analysis: if we drop the following, will lose 3y11m from predictors: f/mWarm5?? f/mControl5??
 
 ### Internalising
 
-#### - 4y
+#### - Prorate
+```{r}
 
-#### - 16y
+
+
+# 4y
+# create data frame with SDQ emotional vars
+df.pro <- df.paper3 %>%
+  select(id, sdq4y_1, sdq4y_2, sdq4y_3, sdq4y_4, sdq4y_5)
+# drop where more than 2 are missing and prorate
+df.pro <- filter(df.pro, rowSums(is.na(df.pro)) < 2) 
+df.pro$SDQ_4 <- unlist(scoreScale(df.pro, items = c(2:6), okmiss=1, type="sum", scalename="SDQ_13"))
+# print sum
+sum(!is.na(df.pro$SDQ_4))
+# drop other original variables and merge
+df.pro <- df.pro %>%
+  select(id, SDQ_4)
+df.paper3 <- full_join(df.paper3, df.pro, by = "id")
+
+
+# 13y
+# create data frame with SDQ emotional vars
+df.pro <- df.paper3 %>%
+  select(id, sdq13y_1, sdq13y_2, sdq13y_3, sdq13y_4, sdq13y_5)
+# drop where more than 2 are missing and prorate
+df.pro <- filter(df.pro, rowSums(is.na(df.pro)) < 2) 
+df.pro$SDQ_13 <- unlist(scoreScale(df.pro, items = c(2:6), okmiss=1, type="sum", scalename="SDQ_13"))
+# print sum
+sum(!is.na(df.pro$SDQ_13))
+# drop other original variables and merge
+df.pro <- df.pro %>%
+  select(id, SDQ_13)
+df.paper3 <- full_join(df.paper3, df.pro, by = "id")
+```
 
 
 ## 4. Descriptives
