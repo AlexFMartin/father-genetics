@@ -1,0 +1,181 @@
+---
+title: "Untitled"
+author: "Alex Martin"
+date: "10/05/2022"
+output: html_document
+---
+
+fWarm1 = pe156, A Smack is Best Way to Discipline CH
+value                        label
+ -9999 Consent withdrawn by partner
+     0                        Other
+     1                 Feel Exactly
+     2                   Feel Often
+     3               Feel Sometimes
+     4                   Never Feel
+     9                           DK
+
+fWarm2 = pe150, Cuddling is Best Way to Calm Child
+  value                        label
+ -9999 Consent withdrawn by partner
+     0                        Other
+     1                 Feel Exactly
+     2                   Feel Often
+     3               Feel Sometimes
+     4                   Never Feel
+     9                           DK
+     
+fWarm3 = pd729, Cuddling Baby Is Very Important
+value                        label
+ -9999 Consent withdrawn by partner
+     0                        Other
+     1                    Yes Agree
+     2             Unsure But Agree
+     3          Unsure But Disagree
+     4                  No Disagree
+     9                           DK
+
+
+fWarm4 = pe158,Really Love Toddler
+ value                        label
+ -9999 Consent withdrawn by partner
+     0                        Other
+     1                 Feel Exactly
+     2                   Feel Often
+     3               Feel Sometimes
+     4                   Never Feel
+     9                           DK
+
+
+fWarm5 = pg4165, Child is very affectionate to partner
+value                        label
+ -9999 Consent withdrawn by partner
+   -11         Triplet / quadruplet
+   -10                Not completed
+    -1                  No response
+     1                          Yes
+     2                           No
+     3                    Sometimes
+     9                           DK
+     
+mWarm1 = g196, same as dads ^
+mWarm2 = g190,
+mWarm3 = f869,
+mWarm4 = g198,
+mWarm5 = j565,
+
+
+fControl1 = pe151, Tods Should Be Able to Eat When They Ask\
+value                        label
+ -9999 Consent withdrawn by partner
+     0                        Other
+     1                 Feel Exactly
+     2                   Feel Often
+     3               Feel Sometimes
+     4                   Never Feel
+     9                           DK
+
+fControl2 = pd726, Baby Should Fit Into Parents Routine
+value                        label
+ -9999 Consent withdrawn by partner
+     0                        Other
+     1                    Yes Agree
+     2             Unsure But Agree
+     3          Unsure But Disagree
+     4                  No Disagree
+     9                           DK
+
+fControl3 = pd727, Babies Should Be Left to Devlp Naturally
+value                        label
+ -9999 Consent withdrawn by partner
+     0                        Other
+     1                    Yes Agree
+     2             Unsure But Agree
+     3          Unsure But Disagree
+     4                  No Disagree
+     9                           DK
+NOTE: this variable needs 0 and 9 set to NA
+
+fControl4 = pg4164, Partner had frequent battles of will with child
+value                       label
+ -9999 Consent withdrawn by mother
+     0                       Other
+     1                         Yes
+     2                          No
+     3                    Yes & No
+     9                          DK
+> 
+
+mControl1 = g191, same as father except all NAs are dealt with ^
+mControl2 = f866,
+mControl3 = f867,
+mControl4 = j564,
+
+chaos1 = pf8003,Noise from other homes is a problem for partner and family
+value                        label
+ -9999 Consent withdrawn by partner
+   -11         Triplet / quadruplet
+   -10                Not completed
+    -2                 Missing page
+    -1                  No response
+     0                Text response
+     1              Serious problem
+     2                Minor problem
+     3                Not a problem
+     4                   No opinion
+     9                   Don't know
+NOTE: needs 4 set to NA
+
+chaos2 = pf8004,Noise from the outside street is a problem for partner and family
+value                        label
+ -9999 Consent withdrawn by partner
+   -11         Triplet / quadruplet
+   -10                Not completed
+    -2                 Missing page
+    -1                  No response
+     0                Text response
+     1              Serious problem
+     2                Minor problem
+     3                Not a problem
+     4                   No opinion
+     9                   Don't know
+NOTE: needs 4 set to NA 
+
+chaos3 = h374, Crowding index
+value                       label
+ -9999 Consent withdrawn by mother
+    -1                          NK
+     1                      <= 0.5
+     2                 >0.5 - 0.75
+     3                   >0.75 - 1
+     4                         > 1
+
+chaos4 = pf8020, Partner's assessment of their home's cleanliness compared to other homes with young children
+value                        label
+ -9999 Consent withdrawn by partner
+   -11         Triplet / quadruplet
+   -10                Not completed
+    -2                 Missing page
+    -1                  No response
+     1                 Much cleaner
+     2                A bit cleaner
+     3               About the same
+     4                   Less clean
+     5              Much less clean
+     9                   Don't know
+Note: need 9 set to NA
+
+chaos5 = pf8021, Partner's assessment of their home's tidiness compared to other homes with young children
+value                        label
+ -9999 Consent withdrawn by partner
+   -11         Triplet / quadruplet
+   -10                Not completed
+    -2                 Missing page
+    -1                  No response
+     1                 Much cleaner
+     2                A bit cleaner
+     3               About the same
+     4                   Less clean
+     5              Much less clean
+     9                   Don't know
+Note: need 9 set to NA
