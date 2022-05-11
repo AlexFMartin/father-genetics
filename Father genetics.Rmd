@@ -166,7 +166,8 @@ df.paper3 <- df.paper3 %>%
 ```
 
 
-# TO DO?? standardise parenting items
+# TO DO?? standardise parenting items ??
+Parenting
 So high score = more of the parenting behaviour
 ```{r}
 # make  relevant responses NA
@@ -191,21 +192,19 @@ df.paper3 <- df.paper3 %>%
            ~structure(4-.))
   )
 
-# recode the below so 1=3, 3=2, 2=1
-#fControl4
-#mControl4
-#### ?? ####   
-# 
-# Use case_when:
-# 
-# df.paper3 <- df.paper3 %>% 
-#   mutate(
-#     fControl4_rev = case_when(
-#       fControl4 == 1 ~ 3,
-#       fControl4 == 2 ~ 1,
-#       fControl4 == 3 ~ 2
-#     )
-#   ) 
+df.paper3 <- df.paper3 %>% 
+  mutate(
+    fControl4 = case_when(
+      fControl4 == 1 ~ 3,
+      fControl4 == 2 ~ 1,
+      fControl4 == 3 ~ 2
+    ),
+    mControl4_rev = case_when(
+      mControl4 == 1 ~ 3,
+      mControl4 == 2 ~ 1,
+      mControl4 == 3 ~ 2
+    )
+  ) 
 ```
 
 
