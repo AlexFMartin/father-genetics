@@ -194,7 +194,18 @@ df.paper3 <- df.paper3 %>%
 # recode the below so 1=3, 3=2, 2=1
 #fControl4
 #mControl4
-#### ?? ####
+#### ?? ####   
+# 
+# Use case_when:
+# 
+# df.paper3 <- df.paper3 %>% 
+#   mutate(
+#     fControl4_rev = case_when(
+#       fControl4 == 1 ~ 3,
+#       fControl4 == 2 ~ 1,
+#       fControl4 == 3 ~ 2
+#     )
+#   ) 
 ```
 
 
