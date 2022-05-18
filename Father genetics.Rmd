@@ -357,7 +357,7 @@ summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
 # save the latent variable
 df.paper3 <- df.paper3 %>%
   mutate(
-    maWarmth = as.numeric(predict(fit))
+    moWarmth = as.numeric(predict(fit))
   )
 ```
 
@@ -403,7 +403,7 @@ fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 # save the latent variable
 df.paper3 <- df.paper3 %>%
   mutate(
-    maControl = as.numeric(predict(fit))
+    moControl = as.numeric(predict(fit))
   )
 ```
 
@@ -595,9 +595,9 @@ aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
 df.paper3 %>%
   select(
     faWarmth,
-    maWarmth,
+    moWarmth,
     faControl,
-    maControl,
+    moControl,
     chaos,
     matches("(Warm|Control|chaos)[1-5].z")
   ) %>%
@@ -879,8 +879,8 @@ Father and mother parenting correlation
 
 ```{r}
 cor.test(~ fathPRS + mothPRS, data = df.paper3)
-cor.test(~ faWarmth + maWarmth, data = df.paper3)
-cor.test(~ faControl + maControl, data = df.paper3)
+cor.test(~ faWarmth + moWarmth, data = df.paper3)
+cor.test(~ faControl + moControl, data = df.paper3)
 ```
 
 
@@ -978,6 +978,11 @@ models %>%
 a. Child internalising problems <- parenting (Models 2a-c for each aspect of parenting (warmth, control, chaos) and 2d a latent parenting variable)
 controls: child sex
 ```{r}
+
+# NOTE: These latent parenting variable structures don't converge when run
+# with our dummy data. If this is the case in the real data, we'll have to 
+# settle for doing the three separate regressions and interpreting those.
+
 models <- tribble(
   ~ model,
   'SDQ_4 ~ faWarmth + sex',
@@ -986,7 +991,7 @@ models <- tribble(
   '
   SDQ_4 ~ faParenting + sex
   # latent parenting variable
-  faParenting =~ faWarmth + faControl + chaos  
+  faParenting =~ faWarmth + faControl + chaos
   '
 )
   
