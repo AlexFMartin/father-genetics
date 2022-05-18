@@ -28,6 +28,7 @@ library(mice) #model missing
 library(VIM) #graphs in MICE
 library(Hmisc) #chi square
 library(tidyverse)
+library(broom)
 library(questionr) #recode values as NA
 library(PROscorerTools) #prorate missing
 library(psy) #cronbach alpha
@@ -838,22 +839,161 @@ rm(df.paper3.subY)
 rm(df.paper3.subN)
 ```
 
-## 6. SEM testing
+## 6. Model testing
 
 ### Model 1
-1. Father parenting <- father PRS
-controls: child sex, mother PRS
+GENE-ENVIRONMENT CORRELATION
 
-2. Father and mother PRS correlation (assortative mating)
+a. Nature and nurture
+Child internalising
+<- Child PRS; father warm; father control; mother warm; mother control; chaos
+controls: child sex
+
+1. Assortative mating
+Father and mother PRS correlation 
 Father and mother parenting correlation
 
-3. Father parenting <- child PRS
+2. Gene-environment correlation
+Father parenting <- father PRS
+controls: child sex, mother PRS
+(add mother parenting as sensitivity analysis)
+
+3. Active gxe correlation
+Father parenting <- child PRS
 controls: child sex, mother PRS
 
-4. Father parenting <- father PRS; child PRS
+4. Evocative gxe correlation
+Father parenting <- father PRS; child PRS
 controls: child sex, mother PRS
+
+#### - a. Nature and nurture
+```{r}
+model <- 'chiPRS ~ faWarmth + sex'
+modelfit <- sem(model, data = df.paper3, missing = "FIML")
+summary(modelfit, fit.measures = TRUE, standardized = TRUE)
+```
+
+#### - 1. Assortative mating
+Father and mother PRS correlation 
+Father and mother parenting correlation
+
+```{r}
+cor.test(~ fathPRS + mothPRS, data = df.paper3)
+cor.test(~ faWarmth + maWarmth, data = df.paper3)
+cor.test(~ faControl + maControl, data = df.paper3)
+```
+
+
+2. Gene-environment correlation
+Father parenting <- father PRS
+controls: child sex, mother PRS
+```{r}
+models <- tribble(
+  ~ model,
+  'faWarmth ~ fathPRS + sex + mothPRS',
+  'faControl ~ fathPRS + sex + mothPRS',
+  'chaos ~ fathPRS + sex + mothPRS'
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
+
+(add mother parenting as sensitivity analysis)
+```{r}
+models <- tribble(
+  ~ model,
+  'faWarmth ~ fathPRS + sex + mothPRS + moWarmth',
+  'faControl ~ fathPRS + sex + mothPRS + moControl'
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
+
+3. Active gxe correlation
+Father parenting <- child PRS
+controls: child sex, mother PRS
+```{r}
+models <- tribble(
+  ~ model,
+  'faWarmth ~ chiPRS + sex + mothPRS',
+  'faControl ~ chiPRS + sex + mothPRS',
+  'chaos ~ chiPRS + sex + mothPRS'
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
+
+4. Evocative gxe correlation
+Father parenting <- father PRS; child PRS
+controls: child sex, mother PRS
+
+```{r}
+models <- tribble(
+  ~ model,
+  'faWarmth ~ fathPRS + chiPRS + sex + mothPRS',
+  'faControl ~ fathPRS + chiPRS + sex + mothPRS',
+  'chaos ~ fathPRS + chiPRS + sex + mothPRS'
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
 
 ### Model 2
+GENETIC CONFOUNDING
 
+1. Does the association between parenting and child internalising reduce after controlling for child PRS
+
+a. Child internalising problems <- parenting (Models 2a-c for each aspect of parenting (warmth, control, chaos) and 2d a latent parenting variable)
+controls: child sex
+
+b. Child internalising problems <- parenting; child PRS (Models 2a-d)
+controls: child sex
 
 ### Model 3
+GENETIC NURTURE
+
+1. Do father genetics associate over and above child genetics?
+
+a. Child internalising problems <- father PRS
+controls: child sex, mother PRS
+
+b. Child internalising problems <- father PRS; child PRS
+controls: child sex, mother PRS
+
+2. Do parental genetics affect child depression over and above genetic transmission via creating environments that influence child depression
+
+If father PRS is significant in 1b:
+Test each aspect of parenting as mediators of b - first separately, then all together in the same model
+

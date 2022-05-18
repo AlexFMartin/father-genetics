@@ -26,3 +26,16 @@ models %>%
   ) %>% 
   select(-fit) %>%
   unnest(cols = c(tidy, glance))
+
+models <- tribble(
+  ~ model,
+  'SDQ_4 ~ faWarmth + chiPRS',
+  'SDQ_4 ~ faControl + chiPRS',
+  'SDQ_4 ~ chaos + chiPRS',
+  '
+  # latent parenting variable
+  faParenting =~ faWarmth + faControl + chaos  
+  
+  SDQ_4 ~ faParenting + chiPRS
+  '
+)
