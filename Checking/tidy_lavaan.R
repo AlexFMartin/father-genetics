@@ -14,7 +14,13 @@ models <- tribble(
   ~ model,
   'z ~ x',
   'z ~ y',
-  'z ~ x + y'
+  'z ~ x + y',
+  '
+  # regress
+  z ~ ltnt + y
+  # latent
+  ltnt =~ x + a
+  '
 )
 
 models %>% 
@@ -25,17 +31,4 @@ models %>%
     glance = map(fit, glance)
   ) %>% 
   select(-fit) %>%
-  unnest(cols = c(tidy, glance))
-
-models <- tribble(
-  ~ model,
-  'SDQ_4 ~ faWarmth + chiPRS',
-  'SDQ_4 ~ faControl + chiPRS',
-  'SDQ_4 ~ chaos + chiPRS',
-  '
-  # latent parenting variable
-  faParenting =~ faWarmth + faControl + chaos  
-  
-  SDQ_4 ~ faParenting + chiPRS
-  '
-)
+  unnest(cols = c(tidy, glance)) 
