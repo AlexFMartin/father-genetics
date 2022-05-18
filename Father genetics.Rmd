@@ -884,7 +884,7 @@ cor.test(~ faControl + maControl, data = df.paper3)
 ```
 
 
-2. Gene-environment correlation
+#### - 2. Gene-environment correlation
 Father parenting <- father PRS
 controls: child sex, mother PRS
 ```{r}
@@ -906,6 +906,7 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
+#### - 2. Sensitivity
 (add mother parenting as sensitivity analysis)
 ```{r}
 models <- tribble(
@@ -925,7 +926,7 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-3. Active gxe correlation
+#### - 3. Active gxe correlation
 Father parenting <- child PRS
 controls: child sex, mother PRS
 ```{r}
@@ -947,10 +948,9 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-4. Evocative gxe correlation
+#### - 4. Evocative gxe correlation
 Father parenting <- father PRS; child PRS
 controls: child sex, mother PRS
-
 ```{r}
 models <- tribble(
   ~ model,
@@ -971,18 +971,65 @@ models %>%
 ```
 
 ### Model 2
-GENETIC CONFOUNDING
+#### - Genetic confounding
 
 1. Does the association between parenting and child internalising reduce after controlling for child PRS
 
 a. Child internalising problems <- parenting (Models 2a-c for each aspect of parenting (warmth, control, chaos) and 2d a latent parenting variable)
 controls: child sex
+```{r}
+models <- tribble(
+  ~ model,
+  'SDQ_4 ~ faWarmth + sex',
+  'SDQ_4 ~ faControl + sex',
+  'SDQ_4 ~ chaos + sex',
+  '
+  SDQ_4 ~ faParenting + sex
+  # latent parenting variable
+  faParenting =~ faWarmth + faControl + chaos  
+  '
+)
+  
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
 
 b. Child internalising problems <- parenting; child PRS (Models 2a-d)
 controls: child sex
+```{r}
+models <- tribble(
+  ~ model,
+  'SDQ_4 ~ faWarmth + chiPRS + sex',
+  'SDQ_4 ~ faControl + chiPRS + sex',
+  'SDQ_4 ~ chaos + chiPRS + sex',
+  '
+  SDQ_4 ~ faParenting + chiPRS + sex
+  # latent parenting variable
+  faParenting =~ faWarmth + faControl + chaos  
+  '
+)
+  
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
 
 ### Model 3
-GENETIC NURTURE
+
+#### - Genetic nurture
 
 1. Do father genetics associate over and above child genetics?
 
@@ -991,9 +1038,47 @@ controls: child sex, mother PRS
 
 b. Child internalising problems <- father PRS; child PRS
 controls: child sex, mother PRS
+```{r}
+models <- tribble(
+  ~ model,
+  'SDQ_4 ~ fathPRS + sex + mothPRS', #a
+  'SDQ_4 ~ fathPRS + chiPRS + sex + mothPRS' #b
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
+
+#### - Mediation
 
 2. Do parental genetics affect child depression over and above genetic transmission via creating environments that influence child depression
 
 If father PRS is significant in 1b:
 Test each aspect of parenting as mediators of b - first separately, then all together in the same model
+```{r}
+models <- tribble(
+  ~ model,
+  'SDQ_4 ~ fathPRS + chiPRS + sex + mothPRS',
+  'SDQ_4 ~ fathPRS + faWarmth + chiPRS + sex + mothPRS',
+  'SDQ_4 ~ fathPRS + faControl + chiPRS + sex + mothPRS',
+  'SDQ_4 ~ fathPRS + chaos + chiPRS + sex + mothPRS',
+  'SDQ_4 ~ fathPRS + faWarmth + faControl + chaos + chiPRS + sex + mothPRS'
+)
 
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
