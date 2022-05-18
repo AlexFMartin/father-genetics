@@ -15,6 +15,10 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
+## To do
+Sample size calc (2)
+Function for descriptives (4)
+Confidence intervals of proportions (5)
 
 ## 1. Data cleaning
 ### Load packages
@@ -22,13 +26,17 @@ When you click the **Knit** button a document will be generated that includes bo
 # Install libraries
 renv::restore(prompt = F)
 library(haven)
-library(mice)
+library(mice) #model missing
+library(VIM) #graphs in MICE
+library(Hmisc) #chi square
 library(tidyverse)
-library(questionr)
-library(PROscorerTools)
-library(psy)
-library(VIM)
-library(lavaan)
+library(questionr) #recode values as NA
+library(PROscorerTools) #prorate missing
+library(psy) #cronbach alpha
+library(lavaan) #SEM
+library(DescTools) #confidence intervals
+library(lsr) #cohens d
+
 # instal packages using install.packages("") in the console then
 # renv::snapshot()
 ```
@@ -165,11 +173,9 @@ df.paper3 <- df.paper3 %>%
   )
 ```
 
-
-# TO DO?? standardise parenting items ??
 Parenting
 So high score = more of the parenting behaviour
-```{r}
+```{r, eval = F}
 # make  relevant responses NA
 df.paper3$fControl3 = recode.na(df.paper3$fControl3, "0", as.numeric = TRUE)
 df.paper3$fControl3 = recode.na(df.paper3$fControl3, "5", as.numeric = TRUE)
@@ -207,23 +213,7 @@ df.paper3 <- df.paper3 %>%
   ) 
 ```
 
-
-### Save data
-```{r, eval = F}
-write_csv(df.paper3, "data/filtered data.csv")
-```
-
-```{r}
-# Load data
-df.paper3 <- read_csv("data/filtered data.csv") %>%
-  as_tibble()
-```
-
 ## 2. Included sample
-
-# NOTE change when run with real data
-eval = F because keeps getting stuck at this step (saved data has had this step run)
-When run real data, run this block
 
 ### Twins/triplets
 ```{r, eval = F}
@@ -242,7 +232,16 @@ df.paper3 <- df.paper3 %>%
     unnest(cols = d)
 ```
 
+### Save data
+```{r, eval = F}
+write_csv(df.paper3, "data/filtered data.csv")
+```
 
+```{r}
+# Load data
+df.paper3 <- read_csv("data/filtered data.csv") %>%
+  as_tibble()
+```
 
 ### Non-biological fathers
 remove any non-biological fathers (??matchDOB_B2677; matchDOB2_B2677)
@@ -254,7 +253,7 @@ Check missing
 https://datascienceplus.com/imputing-missing-data-with-r-mice-package/
 ```{r}
 df.cor <- df.paper3 %>%
-  select(id, fathPRS, mothPRS, chiPRS)
+  select(fathPRS, mothPRS, chiPRS)
 # check Ns and data is as it should be
 str(df.cor)
 # Ns missing
@@ -304,36 +303,63 @@ https://www.danielsoper.com/statcalc/calculator.aspx?id=89
 
 ## 3. Create new variables
 
+### Standardise
+```{r}
+# Standardise parenting variables
+df.paper3 <- df.paper3 %>%
+  mutate(
+    across(contains("Warm"), scale, .names = "{.col}.z"),
+    across(contains("Warm"), as.numeric),
+    across(contains("Control"), scale, .names = "{.col}.z"),
+    across(contains("Control"), as.numeric),
+    across(contains("Chaos"), scale, .names = "{.col}.z"),
+    across(contains("Chaos"), as.numeric)
+  )
+```
+
+
 ### Parental warmth
 factor analysis: if we drop the following, will lose 3y11m from predictors: f/mWarm5?? f/mControl5??
 Fathers
 ```{r}
 df.cor <- df.paper3 %>%
-  select(fWarm1, fWarm2, fWarm3, fWarm4, fWarm5)
+  select(fWarm1.z, fWarm2.z, fWarm3.z, fWarm4.z, fWarm5.z)
 # print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 
 # CFA using FIML
-model <- 'faWarmth =~ fWarm1 + fWarm2 + fWarm3 + fWarm4 + fWarm5'
-fit <- cfa(model, data = df.paper3, estimator = "ml", missing = "fiml")
+model <- 'faWarmth =~ fWarm1.z + fWarm2.z + fWarm3.z + fWarm4.z + fWarm5.z'
+fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+
+# save the latent variable
+df.paper3 <- df.paper3 %>%
+  mutate(
+    faWarmth = as.numeric(predict(fit))
+  )
 ```
 
 Mothers
 ```{r}
 # correlation matrix 
 df.cor <- df.paper3 %>%
-  select(mWarm1, mWarm2, mWarm3, mWarm4, mWarm5)
+  select(mWarm1, mWarm2.z, mWarm3.z, mWarm4.z, mWarm5.z)
 # print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 # Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
 
 # CFA using FIML
-model <- 'moWarmth =~ mWarm1 + mWarm2 + mWarm3 + mWarm4 + mWarm5'
-fit <- cfa(model, data = df.paper3, estimator = "ml", missing = "fiml")
+model <- 'moWarmth =~ mWarm1.z + mWarm2.z + mWarm3.z + mWarm4.z + mWarm5.z'
+fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+
+# save the latent variable
+df.paper3 <- df.paper3 %>%
+  mutate(
+    maWarmth = as.numeric(predict(fit))
+  )
 ```
 
 ### Parental control
@@ -341,32 +367,45 @@ Fathers
 ```{r}
 # correlation matrix 
 df.cor <- df.paper3 %>%
-  select(fControl1, fControl2, fControl3, fControl4)
+  select(fControl1.z, fControl2.z, fControl3.z, fControl4.z)
 # print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 # Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
 
 # CFA using FIML
-model <- 'faControl =~ fControl1 + fControl2 + fControl3 + fControl4'
-fit <- cfa(model, data = df.paper3, estimator = "ml", missing = "fiml")
+model <- 'faControl =~ fControl1.z + fControl2.z + fControl3.z + fControl4.z'
+fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+
+# save the latent variable
+df.paper3 <- df.paper3 %>%
+  mutate(
+    faControl = as.numeric(predict(fit))
+  )
 ```
 
 Mothers
 ```{r}
 # correlation matrix 
 df.cor <- df.paper3 %>%
-  select(mControl1, mControl2, mControl3, mControl4)
+  select(mControl1.z, mControl2.z, mControl3.z, mControl4.z)
 # print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 # Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
 
 # CFA using FIML
-model <- 'moControl =~ mControl1 + mControl2 + mControl3 + mControl4'
-fit <- cfa(model, data = df.paper3, estimator = "ml", missing = "fiml")
-summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+model <- 'moControl =~ mControl1.z + mControl2.z + mControl3.z + mControl4.z'
+fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
+####### summary not working with dummy data - suspect it will with real data ########
+# summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+
+# save the latent variable
+df.paper3 <- df.paper3 %>%
+  mutate(
+    maControl = as.numeric(predict(fit))
+  )
 ```
 
 ### Household chaos
@@ -374,29 +413,35 @@ Confirmatory factor analysis
 ```{r}
 # correlation matrix 
 df.cor <- df.paper3 %>%
-  select(chaos1, chaos2, chaos3, chaos4, chaos5)
+  select(chaos1.z, chaos2.z, chaos3.z, chaos4.z, chaos5.z)
 # print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 # Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
 
 # CFA using FIML
-model <- 'chaos =~ chaos1 + chaos2 + chaos3 + chaos4 + chaos5'
-fit <- cfa(model, data = df.paper3, estimator = "ml", missing = "fiml")
+model <- 'chaos =~ chaos1.z + chaos2.z + chaos3.z + chaos4.z + chaos5.z'
+fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+
+# save the latent variable
+df.paper3 <- df.paper3 %>%
+  mutate(
+    chaos = as.numeric(predict(fit))
+  )
 ```
 
 ### Internalising
-
 Prorate rather than factor with fiml as we want subscale scores
+
+4 years
 ```{r}
-# 4y
 # create data frame with SDQ emotional vars
 df.pro <- df.paper3 %>%
   select(id, sdq4y_1, sdq4y_2, sdq4y_3, sdq4y_4, sdq4y_5)
 # drop where more than 2 are missing and prorate
 df.pro <- filter(df.pro, rowSums(is.na(df.pro)) < 2) 
-df.pro$SDQ_4 <- unlist(scoreScale(df.pro, items = c(2:6), okmiss=1, type="sum", scalename="SDQ_13"))
+df.pro$SDQ_4 <- unlist(scoreScale(df.pro, items = c(2:6), okmiss=1, type="sum", scalename="SDQ_4"))
 # print sum
 sum(!is.na(df.pro$SDQ_4))
 # drop other original variables and merge
@@ -404,7 +449,16 @@ df.pro <- df.pro %>%
   select(id, SDQ_4)
 df.paper3 <- full_join(df.paper3, df.pro, by = "id")
 
-# 13y
+# alpha
+df.cor <- df.paper3 %>%
+  select(sdq4y_1, sdq4y_2, sdq4y_3, sdq4y_4, sdq4y_5)
+# print matrix
+round(cor(df.cor, use = "complete.obs"), 2)
+cronbach(df.cor)
+```
+
+13 years
+```{r}
 # create data frame with SDQ emotional vars
 df.pro <- df.paper3 %>%
   select(id, sdq13y_1, sdq13y_2, sdq13y_3, sdq13y_4, sdq13y_5)
@@ -418,7 +472,16 @@ df.pro <- df.pro %>%
   select(id, SDQ_13)
 df.paper3 <- full_join(df.paper3, df.pro, by = "id")
 
-# 16y
+# alpha
+df.cor <- df.paper3 %>%
+  select(sdq13y_1, sdq13y_2, sdq13y_3, sdq13y_4, sdq13y_5)
+# print matrix
+round(cor(df.cor, use = "complete.obs"), 2)
+cronbach(df.cor)
+```
+
+16 years
+```{r}
 # create data frame with SDQ emotional vars
 df.pro <- df.paper3 %>%
   select(id, sdq16y_1, sdq16y_2, sdq16y_3, sdq16y_4, sdq16y_5)
@@ -431,14 +494,19 @@ sum(!is.na(df.pro$SDQ_16))
 df.pro <- df.pro %>%
   select(id, SDQ_16)
 df.paper3 <- full_join(df.paper3, df.pro, by = "id")
+
+# alpha
+df.cor <- df.paper3 %>%
+  select(sdq16y_1, sdq16y_2, sdq16y_3, sdq16y_4, sdq16y_5)
+# print matrix
+round(cor(df.cor, use = "complete.obs"), 2)
+cronbach(df.cor)
 ```
 
 ### Missing for SEM variables
 ```{r}
 df.cor <- df.paper3 %>%
-  select(id, faWarmth, moWarmth, faControl, moControl, chaos, 
-         SDQ_4, SDQ_13, SDQ_16, 
-         fatherAge, sex)
+  select(SDQ_4, SDQ_13, SDQ_16, fatherAge, sex)
 # check Ns and data is as it should be
 str(df.cor)
 # Ns missing
@@ -451,7 +519,70 @@ apply(df.cor,1,pMiss)
 # Missing pattern
 missing <- md.pattern(df.cor)
 missing
-pdf("missing data all vars.pdf", width = 10)
+pdf("missing data SDQ and covariates.pdf", width = 10)
+dev.off()
+print(missing)
+aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
+```
+
+```{r}
+df.cor <- df.paper3 %>%
+  select(fWarm1.z, fWarm2.z, fWarm3.z, fWarm4.z, fWarm5.z, mWarm1.z, mWarm2.z, mWarm3.z, mWarm4.z, mWarm5.z)
+# check Ns and data is as it should be
+str(df.cor)
+# Ns missing
+Nmissing <- sapply(df.cor, function(x) sum(is.na(x)))
+print(paste0("N missing: ", Nmissing))
+# Props missing (columns and rows)
+pMiss <- function(x){sum(is.na(x))/length(x)*100}
+apply(df.cor,2,pMiss)
+apply(df.cor,1,pMiss)
+# Missing pattern
+missing <- md.pattern(df.cor)
+missing
+pdf("missing data warmth.pdf", width = 10)
+dev.off()
+print(missing)
+aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
+```
+
+```{r}
+df.cor <- df.paper3 %>%
+  select(fControl1.z, fControl2.z, fControl3.z, fControl4.z, mControl1.z, mControl2.z, mControl3.z, mControl4.z)
+# check Ns and data is as it should be
+str(df.cor)
+# Ns missing
+Nmissing <- sapply(df.cor, function(x) sum(is.na(x)))
+print(paste0("N missing: ", Nmissing))
+# Props missing (columns and rows)
+pMiss <- function(x){sum(is.na(x))/length(x)*100}
+apply(df.cor,2,pMiss)
+apply(df.cor,1,pMiss)
+# Missing pattern
+missing <- md.pattern(df.cor)
+missing
+pdf("missing data control.pdf", width = 10)
+dev.off()
+print(missing)
+aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
+```
+
+```{r}
+df.cor <- df.paper3 %>%
+  select(chaos1, chaos2, chaos3, chaos4, chaos5)
+# check Ns and data is as it should be
+str(df.cor)
+# Ns missing
+Nmissing <- sapply(df.cor, function(x) sum(is.na(x)))
+print(paste0("N missing: ", Nmissing))
+# Props missing (columns and rows)
+pMiss <- function(x){sum(is.na(x))/length(x)*100}
+apply(df.cor,2,pMiss)
+apply(df.cor,1,pMiss)
+# Missing pattern
+missing <- md.pattern(df.cor)
+missing
+pdf("missing data chaos.pdf", width = 10)
 dev.off()
 print(missing)
 aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
@@ -460,14 +591,249 @@ aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
 
 ## 4. Descriptives
 
-### Means and distributions
+### Means
+```{r}
+df.paper3 %>%
+  select(
+    faWarmth,
+    maWarmth,
+    faControl,
+    maControl,
+    chaos,
+    matches("(Warm|Control|chaos)[1-5].z")
+  ) %>%
+  summarise(
+    across(everything(), .fns = list(
+      "mean" = ~ mean(na.rm(.)),
+      "lowerCI" = ~ confint(na.rm(.))
+      
+    ))
+  )
+
+
+```
+
+### Proportions
+```{r}
+# wrapper for BinomCI that calls from a logical vector rather than specifying
+propCI <- function(
+  x, ...
+){
+  BinomCI(sum(x), length(x), ...)
+}
+```
+
+```{r}
+# proportions and confidence intervals
+propCI(na.rm(df.paper3$sex == 1))
+propCI(!na.rm(df.paper3$sex == 1))
+```
 
 ### Correlations
+```{r}
+extractVars <- function(d) {
+  transmute(
+    d, 
+    id = factor(id),
+        # add all binary
+    # recode as 0 and 1
+    sex = sex == 1,
+    # add all continuous
+    across(
+      .cols = c(
+        faWarmth,
+        moWarmth,
+        faControl,
+        moControl,
+        chaos,
+        SDQ_4,
+        SDQ_13,
+        SDQ_16
+      ),
+      as.numeric
+    )
+  )
+}
 
-Inc Mum and dad PRS = assortive mating
+correlationMatrix <- function(d, output.format = "graph", na.rm = F){
+  # change data to long
+  d_wide <- extractVars(d)
+  
+  # compare variable pairs using appropriate correlation test
+  doCor <- function(var1, var2, data, drop.na = na.rm) {
+    if (drop.na)
+      data <- data %>% select(var1, var2) %>% drop_na()
+    a <- pull(data, var1)
+    b <- pull(data, var2)
+    out <- list()
+    
+    out$coef <- tryCatch(
+      {
+        if (typeof(a) == 'logical' && typeof(b) == 'logical') {
+          psych::phi(table(a, b))
+        } else {
+          cor(a, b, method = 'pearson')
+        }
+      },
+      error = function(e) {NA_real_}
+    )
+    
+    if (!is.na(out$coef)) {
+      if (typeof(a) == 'logical' && typeof(b) == 'logical') {
+        out$p <- chisq.test(a, b)$p.value
+      } else {
+        out$p <- cor.test(
+          as.numeric(a), 
+          as.numeric(b), 
+          method = 'pearson'
+        )$p.value
+      }
+    } else {
+      out$p <- NA_real_
+    }
+    
+    out
+  }
+  
+  # list data types alphabetically
+  getTypes <- function(var1, var2, data) {
+    types <- c(
+      typeof(pull(data, var1)),
+      typeof(pull(data, var2))
+    )
+    types <- types[order(types)]
+    paste0(types[1], ' v ', types[2])
+  }
+  
+  # create correlation matrix
+  df <- tidyr::crossing(
+    a = names(d_wide)[-1], b = names(d_wide[-1])
+  ) %>%
+    mutate(
+      cor = map2_dbl(a, b, ~doCor(.x, .y, d_wide)$coef),
+      p = map2_dbl(a, b, ~doCor(.x, .y, d_wide)$p),
+      types = map2_chr(a, b, ~getTypes(.x, .y, d_wide))
+    )
+  
+  # set duplicates as NA
+  mat <- matrix(df$cor, nrow = sqrt(nrow(df)), ncol = sqrt(nrow(df)), byrow = T)
+  rownames(mat) <- unique(df$a)
+  colnames(mat) <- unique(df$b)
+  
+  mat[!lower.tri(mat, diag = T)] <- NA
+  mat
+  
+  #Neater correlation plot
+  tmp <- as_tibble(mat) %>%
+    mutate(a = unique(df$a)) %>%
+    pivot_longer(cols = -a, names_to = 'b', values_to = 'cor') %>%
+    mutate(cor = if_else(a == b, NA_real_, cor)) %>%
+    drop_na() %>%
+    mutate(
+      types = map2_chr(a, b, ~getTypes(.x, .y, d_wide)),
+      types = if_else(is.na(cor), NA_character_, types)
+    ) %>%
+    left_join(df %>% select(a, b, p), by = c("a", "b")) %>%
+    mutate(sig = case_when(
+      a == b ~ NA_character_,
+      p < .001 ~ "***",
+      p < .01 ~ "**",
+      p < .05 ~ "*",
+      T ~ ""
+    ))
+  
+  if (output.format == "graph")
+    tmp %>%
+    ggplot(aes(x = a, y = b)) +
+    geom_tile(fill = "grey85") +
+    geom_text(aes(label = ifelse(is.na(cor), "", paste0(round(cor, 3), sig)))) +
+    scale_y_discrete(position = "right") +
+    labs(x = "", y = "")
+  else 
+    mat
+}
+correlationMatrix(df.paper3, na.rm = T)
+#ggsave("../correlation all inc bio father.tiff", device = "tiff", dpi = 320, width = 30, height = 12, units = "cm")
+```
 
 ## 5. Included v excluded
+Create variable y/n subgroup
+```{r}
+# Load data
+df.paper3.allcases <- read_csv("data/filtered data.csv") %>%
+  as_tibble()
+```
 
+Prorate SDQ for the whole sample to examine differences
+```{r}
+# 4 years
+# create data frame with SDQ emotional vars
+df.pro <- df.paper3.allcases %>%
+  select(id, sdq4y_1, sdq4y_2, sdq4y_3, sdq4y_4, sdq4y_5)
+# drop where more than 2 are missing and prorate
+df.pro <- filter(df.pro, rowSums(is.na(df.pro)) < 2) 
+df.pro$SDQ_4_all <- unlist(scoreScale(df.pro, items = c(2:6), okmiss=1, type="sum", scalename="SDQ_4_all"))
+# print sum
+sum(!is.na(df.pro$SDQ_4_all))
+# drop other original variables and merge
+df.pro <- df.pro %>%
+  select(id, SDQ_4_all)
+df.paper3.allcases <- full_join(df.paper3.allcases, df.pro, by = "id")
+```
+
+Stratify
+```{r}
+# create new variable which contains whether participant is in the subsample y/n
+df.paper3.allcases$subsample <- as.numeric(df.paper3.allcases$id %in% df.paper3$id)
+# assign variable label
+attr(df.paper3.allcases$subsample, 'label') <- "is participant part of subsample 1 = yes"
+
+# Stratify by whether the participant is in the subsample for analysis or not
+df.paper3.subY <- df.paper3.allcases[which(df.paper3.allcases$subsample == 1), ]
+df.paper3.subN <- df.paper3.allcases[which(df.paper3.allcases$subsample == 0), ]
+
+# print sample size
+sum(!is.na(df.paper3.subY$id))
+sum(!is.na(df.paper3.subN$id))
+```
+
+```{r}
+# descriptives and ttest
+summary(df.paper3.subY[ ,"SDQ_4_all"])
+CI <- MeanCI(df.paper3.subY$SDQ_4_all, ci = 0.95, na.rm = TRUE)
+print(round(CI, 2))
+# alpha
+df.cor <- df.paper3.subY %>%
+  select(sdq4y_1, sdq4y_2, sdq4y_3, sdq4y_4, sdq4y_5)
+cronbach(df.cor)
+
+summary(df.paper3.subN[ ,"SDQ_4_all"])
+CI <- MeanCI(df.paper3.subN$SDQ_4_all, ci = 0.95, na.rm = TRUE)
+print(round(CI, 2))
+# alpha
+df.cor <- df.paper3.subN %>%
+  select(sdq4y_1, sdq4y_2, sdq4y_3, sdq4y_4, sdq4y_5)
+cronbach(df.cor)
+
+ttest <- t.test(SDQ_4_all ~ subsample, data = df.paper3.allcases)
+d <- cohensD(SDQ_4_all ~ subsample,
+        data = df.paper3.allcases)
+ttest
+print(d)
+```
+
+
+```{r}  
+# Child sex (girls = ??)
+print(paste0("Child sex: "))
+table(df.paper3.subY$sex)
+table(df.paper3.subN$sex)
+chiSquare(sex ~ subsample, data = df.paper3.allcases)
+
+rm(df.paper3.allcases)
+rm(df.paper3.subY)
+rm(df.paper3.subN)
+```
 
 ## 6. SEM testing
 
