@@ -17,6 +17,7 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ## To do
 Sample size calc (2)
+Save as DOI
 
 ## 1. Data cleaning
 ### Load packages
@@ -35,6 +36,7 @@ library(psy) #cronbach alpha
 library(lavaan) #SEM
 library(DescTools) #confidence intervals
 library(lsr) #cohens d
+
 
 # instal packages using install.packages("") in the console then
 # renv::snapshot()
@@ -214,7 +216,7 @@ df.paper3 <- df.paper3 %>%
 
 ## 2. Included sample
 
-### Twins/triplets
+### Multiple births
 ```{r, eval = F}
 # Set seed for randomisation
 set.seed(20220510)
@@ -231,7 +233,7 @@ df.paper3 <- df.paper3 %>%
     unnest(cols = d)
 ```
 
-### Save data
+### Save/load data
 ```{r, eval = F}
 write_csv(df.paper3, "data/filtered data.csv")
 ```
