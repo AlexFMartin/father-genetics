@@ -18,6 +18,8 @@ When you click the **Knit** button a document will be generated that includes bo
 ## To do
 Sample size calc (2)
 Save as DOI
+Drop incomplete trios
+Drop non-bio dads
 
 ## 1. Data cleaning
 ### Load packages
@@ -33,7 +35,7 @@ library(broom)
 library(questionr) #recode values as NA
 library(PROscorerTools) #prorate missing
 library(psy) #cronbach alpha
-library(lavaan) #SEM
+library(lavaan) #cfa, latent scores, and regressions
 library(DescTools) #confidence intervals
 library(lsr) #cohens d
 
@@ -108,6 +110,7 @@ df.paper3 <- df.paper3 %>%
     chaos3 = h374,
     chaos4 = pf8020,
     chaos5 = pf8021,
+    chaos6 = kf230,
     # child SDQ
     sdq4y_1 = pg4132,
     sdq4y_2 = pg4137,
@@ -205,11 +208,6 @@ df.paper3 <- df.paper3 %>%
       fControl4 == 1 ~ 3,
       fControl4 == 2 ~ 1,
       fControl4 == 3 ~ 2
-    ),
-    mControl4_rev = case_when(
-      mControl4 == 1 ~ 3,
-      mControl4 == 2 ~ 1,
-      mControl4 == 3 ~ 2
     )
   ) 
 ```
@@ -233,6 +231,7 @@ df.paper3 <- df.paper3 %>%
     unnest(cols = d)
 ```
 
+
 ### Save/load data
 ```{r, eval = F}
 write_csv(df.paper3, "data/filtered data.csv")
@@ -244,10 +243,7 @@ df.paper3 <- read_csv("data/filtered data.csv") %>%
   as_tibble()
 ```
 
-### Non-biological fathers
-remove any non-biological fathers (??matchDOB_B2677; matchDOB2_B2677)
-•	The first variables are binary (e.g. matchDOB, matchday etc.); they state whether there is a match or not across the questionnaires.
-•	The second variables are 3-category (e.g. matchDOB2, matchday2 etc.); they split the ‘match’ category of the binary variable into those who only reported once, and those who reported more than once and who matched in every questionnaire they completed.
+
 
 ### Complete families
 Check missing
@@ -297,7 +293,13 @@ caseCount$completeFamilies <- nrow(df.paper3)
 caseCount
 ```
 
+### Complete familes
+Only include families which have complete PRS data for father, mother and child
 
+### Non-biological fathers
+remove any non-biological fathers (??matchDOB_B2677; matchDOB2_B2677)
+•	The first variables are binary (e.g. matchDOB, matchday etc.); they state whether there is a match or not across the questionnaires.
+•	The second variables are 3-category (e.g. matchDOB2, matchday2 etc.); they split the ‘match’ category of the binary variable into those who only reported once, and those who reported more than once and who matched in every questionnaire they completed.
 
 ### Sample size calc
 https://www.danielsoper.com/statcalc/calculator.aspx?id=89
@@ -414,7 +416,7 @@ Confirmatory factor analysis
 ```{r}
 # correlation matrix 
 df.cor <- df.paper3 %>%
-  select(chaos1.z, chaos2.z, chaos3.z, chaos4.z, chaos5.z)
+  select(chaos1.z, chaos2.z, chaos3.z, chaos4.z, chaos5.z, chaos6.z)
 # print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)

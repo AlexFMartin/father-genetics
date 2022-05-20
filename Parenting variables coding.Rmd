@@ -179,3 +179,11 @@ value                        label
      5              Much less clean
      9                   Don't know
 Note: need 9 set to NA
+
+chaos 6 = Child has regular sleep routine
+ value                       label
+ -9999 Consent withdrawn by mother
+    -1                     Missing
+     1                         yes
+     2                          no
+     9                          dk
