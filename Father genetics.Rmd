@@ -38,6 +38,7 @@ library(psy) #cronbach alpha
 library(lavaan) #cfa, latent scores, and regressions
 library(DescTools) #confidence intervals
 library(lsr) #cohens d
+library(REdaS) #KMO
 
 
 # instal packages using install.packages("") in the console then
@@ -245,7 +246,7 @@ df.paper3 <- read_csv("data/filtered data.csv") %>%
 
 
 
-### Complete families
+### Missing families
 Check missing
 https://datascienceplus.com/imputing-missing-data-with-r-mice-package/
 ```{r}
@@ -323,19 +324,26 @@ df.paper3 <- df.paper3 %>%
 
 ### Parental warmth
 factor analysis: if we drop the following, will lose 3y11m from predictors: f/mWarm5?? f/mControl5??
+
 Fathers
 ```{r}
+# check assumptions for confirmatory factor analysis
+# correlation matrix
 df.cor <- df.paper3 %>%
   select(fWarm1.z, fWarm2.z, fWarm3.z, fWarm4.z, fWarm5.z)
-# print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
-cronbach(df.cor)
+# KMO
+KMOS(df.cor, use = c("complete.obs"))
 
 # CFA using FIML
 model <- 'faWarmth =~ fWarm1.z + fWarm2.z + fWarm3.z + fWarm4.z + fWarm5.z'
 fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+# reliability
+cronbach(df.cor)
+```
 
+```{r}
 # save the latent variable
 df.paper3 <- df.paper3 %>%
   mutate(
@@ -345,19 +353,23 @@ df.paper3 <- df.paper3 %>%
 
 Mothers
 ```{r}
+# check assumptions for confirmatory factor analysis
 # correlation matrix 
 df.cor <- df.paper3 %>%
-  select(mWarm1, mWarm2.z, mWarm3.z, mWarm4.z, mWarm5.z)
-# print matrix
+  select(mWarm1.z, mWarm2.z, mWarm3.z, mWarm4.z, mWarm5.z)
 round(cor(df.cor, use = "complete.obs"), 2)
-cronbach(df.cor)
-# Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
+# KMO
+KMOS(df.cor, use = c("complete.obs"))
 
 # CFA using FIML
 model <- 'moWarmth =~ mWarm1.z + mWarm2.z + mWarm3.z + mWarm4.z + mWarm5.z'
 fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+# reliability
+cronbach(df.cor)
+```
 
+```{r}
 # save the latent variable
 df.paper3 <- df.paper3 %>%
   mutate(
@@ -368,19 +380,23 @@ df.paper3 <- df.paper3 %>%
 ### Parental control
 Fathers
 ```{r}
+# check assumptions for confirmatory factor analysis
 # correlation matrix 
 df.cor <- df.paper3 %>%
   select(fControl1.z, fControl2.z, fControl3.z, fControl4.z)
-# print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
-cronbach(df.cor)
-# Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
+# KMO
+KMOS(df.cor, use = c("complete.obs"))
 
 # CFA using FIML
 model <- 'faControl =~ fControl1.z + fControl2.z + fControl3.z + fControl4.z'
 fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+# reliability
+cronbach(df.cor)
+```
 
+```{r}
 # save the latent variable
 df.paper3 <- df.paper3 %>%
   mutate(
@@ -390,20 +406,24 @@ df.paper3 <- df.paper3 %>%
 
 Mothers
 ```{r}
+# check assumptions for confirmatory factor analysis
 # correlation matrix 
 df.cor <- df.paper3 %>%
   select(mControl1.z, mControl2.z, mControl3.z, mControl4.z)
-# print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
-cronbach(df.cor)
-# Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
+# KMO
+KMOS(df.cor, use = c("complete.obs"))
 
 # CFA using FIML
 model <- 'moControl =~ mControl1.z + mControl2.z + mControl3.z + mControl4.z'
 fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 ####### summary not working with dummy data - suspect it will with real data ########
 # summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+# reliability
+cronbach(df.cor)
+```
 
+```{r}
 # save the latent variable
 df.paper3 <- df.paper3 %>%
   mutate(
@@ -412,21 +432,24 @@ df.paper3 <- df.paper3 %>%
 ```
 
 ### Household chaos
-Confirmatory factor analysis
 ```{r}
+# check assumptions for confirmatory factor analysis
 # correlation matrix 
 df.cor <- df.paper3 %>%
   select(chaos1.z, chaos2.z, chaos3.z, chaos4.z, chaos5.z, chaos6.z)
-# print matrix
 round(cor(df.cor, use = "complete.obs"), 2)
-cronbach(df.cor)
-# Check: relatively high correlations among many of the items = would be a good candidate for factor analysis
+# KMO
+KMOS(df.cor, use = c("complete.obs"))
 
 # CFA using FIML
-model <- 'chaos =~ chaos1.z + chaos2.z + chaos3.z + chaos4.z + chaos5.z'
+model <- 'chaos =~ chaos1.z + chaos2.z + chaos3.z + chaos4.z + chaos5.z + chaos6.z'
 fit <- cfa(model, data = df.paper3, estimator = "mlr", missing = "fiml")
 summary(fit, standardized = TRUE, fit.measures = TRUE, rsq = TRUE)
+# reliability
+cronbach(df.cor)
+```
 
+```{r}
 # save the latent variable
 df.paper3 <- df.paper3 %>%
   mutate(
@@ -506,7 +529,7 @@ round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 ```
 
-### Missing for SEM variables
+### Missing data
 ```{r}
 df.cor <- df.paper3 %>%
   select(SDQ_4, SDQ_13, SDQ_16, fatherAge, sex)
@@ -598,6 +621,9 @@ aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
 ```{r}
 df.paper3 %>%
   select(
+    SDQ_4,
+    SDQ_13,
+    SDQ_16,
     faWarmth,
     moWarmth,
     faControl,
@@ -806,7 +832,7 @@ sum(!is.na(df.paper3.subN$id))
 ```
 
 ```{r}
-# descriptives and ttest
+# descriptives and ttests
 summary(df.paper3.subY[ ,"SDQ_4_all"])
 CI <- MeanCI(df.paper3.subY$SDQ_4_all, ci = 0.95, na.rm = TRUE)
 print(round(CI, 2))
@@ -832,7 +858,7 @@ print(d)
 
 
 ```{r}  
-# Child sex (girls = ??)
+# Child sex and chi square (girls = ??)
 print(paste0("Child sex: "))
 table(df.paper3.subY$sex)
 table(df.paper3.subN$sex)
@@ -888,7 +914,7 @@ cor.test(~ faControl + moControl, data = df.paper3)
 ```
 
 
-#### - 2. Gene-environment correlation
+#### - 2a. Gene-environment correlation
 Father parenting <- father PRS
 controls: child sex, mother PRS
 ```{r}
@@ -910,27 +936,6 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-#### - 2. Sensitivity
-(add mother parenting as sensitivity analysis)
-```{r}
-models <- tribble(
-  ~ model,
-  'faWarmth ~ fathPRS + sex + mothPRS + moWarmth',
-  'faControl ~ fathPRS + sex + mothPRS + moControl'
-)
-
-models %>% 
-  mutate(
-    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
-    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
-    # tidy = map(fit, tidy),  # keep all results
-    glance = map(fit, glance)
-  ) %>% 
-  select(-fit) %>%
-  unnest(cols = c(tidy, glance))
-```
-
-#### - 3. Active gxe correlation
 Father parenting <- child PRS
 controls: child sex, mother PRS
 ```{r}
@@ -952,7 +957,27 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-#### - 4. Evocative gxe correlation
+#### - 2b. Sensitivity
+(add mother parenting as sensitivity analysis)
+```{r}
+models <- tribble(
+  ~ model,
+  'faWarmth ~ fathPRS + sex + mothPRS + moWarmth',
+  'faControl ~ fathPRS + sex + mothPRS + moControl'
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
+
+#### - 3. Active / evocative gxe correlation
 Father parenting <- father PRS; child PRS
 controls: child sex, mother PRS
 ```{r}
@@ -967,8 +992,8 @@ models %>%
   mutate(
     fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
     tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
-    # tidy = map(fit, tidy),  # keep all results
-    glance = map(fit, glance)
+    tidy = map(fit, tidy),  # keep all results
+    # glance = map(fit, glance)
   ) %>% 
   select(-fit) %>%
   unnest(cols = c(tidy, glance))
@@ -982,21 +1007,11 @@ models %>%
 a. Child internalising problems <- parenting (Models 2a-c for each aspect of parenting (warmth, control, chaos) and 2d a latent parenting variable)
 controls: child sex
 ```{r}
-
-# NOTE: These latent parenting variable structures don't converge when run
-# with our dummy data. If this is the case in the real data, we'll have to 
-# settle for doing the three separate regressions and interpreting those.
-
 models <- tribble(
   ~ model,
   'SDQ_4 ~ faWarmth + sex',
   'SDQ_4 ~ faControl + sex',
-  'SDQ_4 ~ chaos + sex',
-  '
-  SDQ_4 ~ faParenting + sex
-  # latent parenting variable
-  faParenting =~ faWarmth + faControl + chaos
-  '
+  'SDQ_4 ~ chaos + sex'
 )
   
 models %>% 
@@ -1017,12 +1032,7 @@ models <- tribble(
   ~ model,
   'SDQ_4 ~ faWarmth + chiPRS + sex',
   'SDQ_4 ~ faControl + chiPRS + sex',
-  'SDQ_4 ~ chaos + chiPRS + sex',
-  '
-  SDQ_4 ~ faParenting + chiPRS + sex
-  # latent parenting variable
-  faParenting =~ faWarmth + faControl + chaos  
-  '
+  'SDQ_4 ~ chaos + chiPRS + sex'
 )
   
 models %>% 
@@ -1074,7 +1084,6 @@ Test each aspect of parenting as mediators of b - first separately, then all tog
 ```{r}
 models <- tribble(
   ~ model,
-  'SDQ_4 ~ fathPRS + chiPRS + sex + mothPRS',
   'SDQ_4 ~ fathPRS + faWarmth + chiPRS + sex + mothPRS',
   'SDQ_4 ~ fathPRS + faControl + chiPRS + sex + mothPRS',
   'SDQ_4 ~ fathPRS + chaos + chiPRS + sex + mothPRS',
