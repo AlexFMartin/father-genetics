@@ -50,3 +50,6 @@ rsconnect/
 
 # ignore main data
 data/
+
+# ignore image files
+*.pdf
