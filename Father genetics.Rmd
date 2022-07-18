@@ -17,8 +17,6 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ## To do
 Sample size calc (2)
-Save as DOI
-Drop incomplete trios
 Drop non-bio dads
 
 ## 1. Data cleaning
@@ -87,6 +85,7 @@ df.paper3 <- df.paper3 %>%
     chiPRS = PRS_int,
     fathPRS = PRS_int.x,
     mothPRS = PRS_int.y,
+    bioFather = pl9980,
     # parenting 
     fWarm1 = pe156,
     fWarm2 = pe150,
@@ -118,16 +117,16 @@ df.paper3 <- df.paper3 %>%
     sdq4y_3 = pg4142,
     sdq4y_4 = pg4145,
     sdq4y_5 = pg4153,
+    sdq8y_1 = n8342,
+    sdq8y_2 = n8347,
+    sdq8y_3 = n8352,
+    sdq8y_4 = n8355,
+    sdq8y_5 = n8363,
     sdq13y_1 = ta7002,
     sdq13y_2 = ta7007,
     sdq13y_3 = ta7012,
     sdq13y_4 = ta7015,
-    sdq13y_5 = ta7023,
-    sdq16y_1 = tc4002,
-    sdq16y_2 = tc4007,
-    sdq16y_3 = tc4012,
-    sdq16y_4 = tc4015,
-    sdq16y_5 = tc4023
+    sdq13y_5 = ta7023
   )
 ```
 
@@ -145,6 +144,16 @@ df.paper3 <- df.paper3 %>%
     sdq4y_5 = sdq4y_5-1
   )
 
+# 8y
+df.paper3 <- df.paper3 %>%
+  mutate(
+    sdq8y_1 = sdq8y_1-1,
+    sdq8y_2 = sdq8y_2-1,
+    sdq8y_3 = sdq8y_3-1,
+    sdq8y_4 = sdq8y_4-1,
+    sdq8y_5 = sdq8y_5-1
+  )
+
 # 13y
 df.paper3$sdq13y_1 = recode.na(df.paper3$sdq13y_1, "9", as.numeric = TRUE)
 df.paper3$sdq13y_2 = recode.na(df.paper3$sdq13y_2, "9", as.numeric = TRUE)
@@ -159,22 +168,6 @@ df.paper3 <- df.paper3 %>%
     sdq13y_3 = sdq13y_3-1,
     sdq13y_4 = sdq13y_4-1,
     sdq13y_5 = sdq13y_5-1  
-  )
-
-# 16y
-df.paper3$sdq16y_1 = recode.na(df.paper3$sdq16y_1, "9", as.numeric = TRUE)
-df.paper3$sdq16y_2 = recode.na(df.paper3$sdq16y_2, "9", as.numeric = TRUE)
-df.paper3$sdq16y_3 = recode.na(df.paper3$sdq16y_3, "9", as.numeric = TRUE)
-df.paper3$sdq16y_4 = recode.na(df.paper3$sdq16y_4, "9", as.numeric = TRUE)
-df.paper3$sdq16y_5 = recode.na(df.paper3$sdq16y_5, "9", as.numeric = TRUE)
-
-df.paper3 <- df.paper3 %>%
-  mutate(
-    sdq16y_1 = sdq16y_1-1,
-    sdq16y_2 = sdq16y_2-1,
-    sdq16y_3 = sdq16y_3-1,
-    sdq16y_4 = sdq16y_4-1,
-    sdq16y_5 = sdq16y_5-1
   )
 ```
 
@@ -246,7 +239,7 @@ df.paper3 <- read_csv("data/filtered data.csv") %>%
 
 
 
-### Missing families
+### Complete families
 Check missing
 https://datascienceplus.com/imputing-missing-data-with-r-mice-package/
 ```{r}
@@ -292,15 +285,26 @@ df.paper3 <- df.paper3 %>%
 
 caseCount$completeFamilies <- nrow(df.paper3)
 caseCount
+
+
+# Only include families which have complete PRS data for father, mother and child
+df.paper3 <- df.paper3 %>%
+  filter(
+    !is.na(fathPRS) & !is.na(mothPRS) & !is.na(chiPRS)
+  )
 ```
 
-### Complete familes
-Only include families which have complete PRS data for father, mother and child
-
 ### Non-biological fathers
-remove any non-biological fathers (??matchDOB_B2677; matchDOB2_B2677)
-•	The first variables are binary (e.g. matchDOB, matchday etc.); they state whether there is a match or not across the questionnaires.
-•	The second variables are 3-category (e.g. matchDOB2, matchday2 etc.); they split the ‘match’ category of the binary variable into those who only reported once, and those who reported more than once and who matched in every questionnaire they completed.
+```{r}
+withNonBioDad <- nrow(df.paper3)
+
+df.paper3 <- df.paper3 %>%
+  filter(
+    bioFather != 2 
+  )
+
+withNonBioDad - nrow(df.paper3)
+```
 
 ### Sample size calc
 https://www.danielsoper.com/statcalc/calculator.aspx?id=89
@@ -483,6 +487,29 @@ round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 ```
 
+8 years
+```{r}
+# create data frame with SDQ emotional vars
+df.pro <- df.paper3 %>%
+  select(id, sdq8y_1, sdq8y_2, sdq8y_3, sdq8y_4, sdq8y_5)
+# drop where more than 2 are missing and prorate
+df.pro <- filter(df.pro, rowSums(is.na(df.pro)) < 2) 
+df.pro$SDQ_8 <- unlist(scoreScale(df.pro, items = c(2:6), okmiss=1, type="sum", scalename="SDQ_8"))
+# print sum
+sum(!is.na(df.pro$SDQ_8))
+# drop other original variables and merge
+df.pro <- df.pro %>%
+  select(id, SDQ_8)
+df.paper3 <- full_join(df.paper3, df.pro, by = "id")
+
+# alpha
+df.cor <- df.paper3 %>%
+  select(sdq8y_1, sdq8y_2, sdq8y_3, sdq8y_4, sdq8y_5)
+# print matrix
+round(cor(df.cor, use = "complete.obs"), 2)
+cronbach(df.cor)
+```
+
 13 years
 ```{r}
 # create data frame with SDQ emotional vars
@@ -506,33 +533,11 @@ round(cor(df.cor, use = "complete.obs"), 2)
 cronbach(df.cor)
 ```
 
-16 years
-```{r}
-# create data frame with SDQ emotional vars
-df.pro <- df.paper3 %>%
-  select(id, sdq16y_1, sdq16y_2, sdq16y_3, sdq16y_4, sdq16y_5)
-# drop where more than 2 are missing and prorate
-df.pro <- filter(df.pro, rowSums(is.na(df.pro)) < 2) 
-df.pro$SDQ_16 <- unlist(scoreScale(df.pro, items = c(2:6), okmiss=1, type="sum", scalename="SDQ_16"))
-# print sum
-sum(!is.na(df.pro$SDQ_16))
-# drop other original variables and merge
-df.pro <- df.pro %>%
-  select(id, SDQ_16)
-df.paper3 <- full_join(df.paper3, df.pro, by = "id")
-
-# alpha
-df.cor <- df.paper3 %>%
-  select(sdq16y_1, sdq16y_2, sdq16y_3, sdq16y_4, sdq16y_5)
-# print matrix
-round(cor(df.cor, use = "complete.obs"), 2)
-cronbach(df.cor)
-```
 
 ### Missing data
 ```{r}
 df.cor <- df.paper3 %>%
-  select(SDQ_4, SDQ_13, SDQ_16, fatherAge, sex)
+  select(SDQ_4, SDQ_8, SDQ_13, fatherAge, sex)
 # check Ns and data is as it should be
 str(df.cor)
 # Ns missing
@@ -622,8 +627,8 @@ aggr_plot <- aggr(df.cor, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE)
 df.paper3 %>%
   select(
     SDQ_4,
+    SDQ_8,
     SDQ_13,
-    SDQ_16,
     faWarmth,
     moWarmth,
     faControl,
@@ -681,8 +686,8 @@ extractVars <- function(d) {
         moControl,
         chaos,
         SDQ_4,
-        SDQ_13,
-        SDQ_16
+        SDQ_8,
+        SDQ_13
       ),
       as.numeric
     )
@@ -872,16 +877,55 @@ rm(df.paper3.subN)
 ## 6. Model testing
 
 ### Model 1
+DIRECT EFFECTS
+```{r}
+models <- tribble(
+  ~ model,
+  'SDQ_4 ~ chiPRS * fathPRS + sex',
+  'SDQ_4 ~ faWarmth + sex',
+  'SDQ_4 ~ faControl + sex',
+  'SDQ_4 ~ chaos + sex',
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
+
+DIRECT EFFECTS SENSITIVITY
+```{r}
+models <- tribble(
+  ~ model,
+  'SDQ_4 ~ chiPRS * fathPRS + sex + mothPRS',
+  'SDQ_4 ~ faWarmth + sex + moWarmth',
+  'SDQ_4 ~ faControl + sex + moControl',
+  'SDQ_4 ~ chaos + sex',
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
+```
+
+### Model 2
 GENE-ENVIRONMENT CORRELATION
 
-a. Nature and nurture
+1. Nature and nurture
 Child internalising
 <- Child PRS; father warm; father control; mother warm; mother control; chaos
 controls: child sex
-
-1. Assortative mating
-Father and mother PRS correlation 
-Father and mother parenting correlation
 
 2. Gene-environment correlation
 Father parenting <- father PRS
@@ -896,25 +940,30 @@ controls: child sex, mother PRS
 Father parenting <- father PRS; child PRS
 controls: child sex, mother PRS
 
-#### - a. Nature and nurture
+#### - Nature and nurture
 ```{r}
-model <- 'chiPRS ~ faWarmth + sex'
-modelfit <- sem(model, data = df.paper3, missing = "FIML")
-summary(modelfit, fit.measures = TRUE, standardized = TRUE)
+models <- tribble(
+  ~ model,
+  'faWarmth ~ chiPRS + sex',
+  'faControl ~ chiPRS + sex',
+  'chaos ~ chiPRS + sex'
+)
+
+models %>% 
+  mutate(
+    fit = map(model, ~ sem(., data = df.paper3, missing = 'FIML')),
+    tidy = map(fit, ~ tidy(.) %>% .[1, ]),  # only keep first row
+    # tidy = map(fit, tidy),  # keep all results
+    glance = map(fit, glance)
+  ) %>% 
+  select(-fit) %>%
+  unnest(cols = c(tidy, glance))
 ```
 
-#### - 1. Assortative mating
-Father and mother PRS correlation 
-Father and mother parenting correlation
-
-```{r}
-cor.test(~ fathPRS + mothPRS, data = df.paper3)
-cor.test(~ faWarmth + moWarmth, data = df.paper3)
-cor.test(~ faControl + moControl, data = df.paper3)
-```
 
 
-#### - 2a. Gene-environment correlation
+
+#### - Gene-environment correlation
 Father parenting <- father PRS
 controls: child sex, mother PRS
 ```{r}
@@ -957,7 +1006,7 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-#### - 2b. Sensitivity
+#### - Sensitivity
 (add mother parenting as sensitivity analysis)
 ```{r}
 models <- tribble(
@@ -977,7 +1026,7 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-#### - 3. Active / evocative gxe correlation
+#### - Active / evocative gxe correlation
 Father parenting <- father PRS; child PRS
 controls: child sex, mother PRS
 ```{r}
@@ -999,7 +1048,7 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-### Model 2
+### Model 3
 #### - Genetic confounding
 
 1. Does the association between parenting and child internalising reduce after controlling for child PRS
@@ -1046,7 +1095,6 @@ models %>%
   unnest(cols = c(tidy, glance))
 ```
 
-### Model 3
 
 #### - Genetic nurture
 
@@ -1099,4 +1147,14 @@ models %>%
   ) %>% 
   select(-fit) %>%
   unnest(cols = c(tidy, glance))
+```
+
+#### - Assortative mating
+Father and mother PRS correlation 
+Father and mother parenting correlation
+
+```{r}
+cor.test(~ fathPRS + mothPRS, data = df.paper3)
+cor.test(~ faWarmth + moWarmth, data = df.paper3)
+cor.test(~ faControl + moControl, data = df.paper3)
 ```
