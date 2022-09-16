@@ -53,3 +53,4 @@ data/
 
 # ignore image files
 *.pdf
+.idea/
