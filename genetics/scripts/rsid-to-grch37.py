@@ -104,9 +104,10 @@ def convert(
 
 
 if __name__ == '__main__':
-    convert(
-        file="../data/gwas_demo.txt",
-        chr_column="CHR",
-        position_column="BP",
-        output="../data/gwas_output.txt"
-    )
+    do_conversion()
+    # convert(
+    #     file="../data/gwas_demo.txt",
+    #     chr_column="CHR",
+    #     position_column="BP",
+    #     output="../data/gwas_output.txt"
+    # )
